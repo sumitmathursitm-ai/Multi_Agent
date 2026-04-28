@@ -4,7 +4,7 @@ import streamlit as st
 
 from app.agents import SalesAgentOrchestrator
 from app.config import reload_settings, settings_debug_summary
-from app.emailer import gmail_debug_summary, test_gmail_login
+from app.emailer import email_debug_summary, test_email_provider
 from app.models import AgentRequest
 from app.seed_sales import seed_sales
 
@@ -30,7 +30,7 @@ if "messages" not in st.session_state:
 
 
 st.title("Ecommerce Sales Multi-Agent")
-st.caption("Routes your request to a Supabase sales agent or Gmail PDF report agent.")
+st.caption("Routes your request to a Supabase sales agent or email PDF report agent.")
 
 with st.sidebar:
     st.header("Controls")
@@ -50,12 +50,12 @@ with st.sidebar:
             reload_settings()
             st.success(".env reloaded.")
         try:
-            st.json(gmail_debug_summary())
+            st.json(email_debug_summary())
         except Exception as exc:
             st.warning(f"Email settings are not fully configured yet: {exc}")
         if st.button("Test email provider", use_container_width=True):
             try:
-                sender = test_gmail_login()
+                sender = test_email_provider()
                 st.success(f"Email provider configuration looks ready for {sender}")
             except Exception as exc:
                 st.error(str(exc))
@@ -64,7 +64,7 @@ with st.sidebar:
     st.markdown("**Try asking**")
     st.code("What are my top products this month?")
     st.code("Summarize gross revenue and top regions.")
-    st.code("Send a PDF sales report to my Gmail.")
+    st.code("Send a PDF sales report to my email.")
 
 
 for message in st.session_state.messages:
@@ -104,7 +104,7 @@ if prompt:
                 error = f"Request failed: {exc}"
                 st.error(error)
                 st.info(
-                    "If the PDF was created but email failed on Railway, use RESEND_API_KEY and EMAIL_FROM. "
-                    "Gmail SMTP is often blocked by Railway outbound networking."
+                    "If the PDF was created but email failed, check RESEND_API_KEY, EMAIL_FROM, "
+                    "and EMAIL_RECIPIENT in your environment variables."
                 )
                 add_message("assistant", error)

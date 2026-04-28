@@ -7,7 +7,7 @@ A Python multi-agent solution for an ecommerce company. It can:
 - Route a natural-language request with an OpenRouter LLM.
 - Query Supabase for sales summaries.
 - Generate a PDF sales report.
-- Send the PDF report through Gmail SMTP.
+- Send the PDF report through the Resend email API.
 - Use a Streamlit chat UI for browser-based querying.
 - Run locally as a CLI or API.
 - Deploy to Railway.
@@ -18,11 +18,11 @@ A Python multi-agent solution for an ecommerce company. It can:
 flowchart LR
   U["User query"] --> R["RouterAgent - OpenRouter"]
   R -->|sales question| S["SupabaseSalesAgent"]
-  R -->|send report| G["GmailReportAgent"]
+  R -->|send report| G["EmailReportAgent"]
   S --> DB["Supabase sales_orders"]
   G --> DB
   G --> P["PDF generator"]
-  P --> M["Gmail SMTP"]
+  P --> M["Resend HTTPS API"]
 ```
 
 ## 1. Create the Supabase Table
@@ -55,48 +55,28 @@ OPENROUTER_MODEL=openai/gpt-4o-mini
 OPENROUTER_SITE_URL=http://localhost:8000
 OPENROUTER_APP_NAME=Ecom Sales Agent
 
-EMAIL_PROVIDER=auto
-EMAIL_FROM=
 RESEND_API_KEY=
-GMAIL_SENDER=your-email@gmail.com
-GMAIL_APP_PASSWORD=your-gmail-app-password
-GMAIL_RECIPIENT=recipient@gmail.com
-GMAIL_SMTP_HOST=smtp.gmail.com
-GMAIL_SMTP_PORT=465
+EMAIL_FROM=Your Store <reports@your-verified-domain.com>
+EMAIL_RECIPIENT=recipient@example.com
 
 REPORT_OUTPUT_DIR=reports
 SEED_DEFAULT_ROWS=250
 ```
 
-For local Gmail SMTP, enable 2-Step Verification on the sender account and create an **App Password**. Use that app password, not your normal Gmail password.
-
-For Railway, use Resend instead of Gmail SMTP because Railway may block outbound SMTP ports. Add:
+The app sends email through Resend over HTTPS. Add:
 
 ```env
-EMAIL_PROVIDER=resend
 RESEND_API_KEY=your-resend-api-key
 EMAIL_FROM=Your Store <reports@your-verified-domain.com>
-GMAIL_RECIPIENT=recipient@gmail.com
+EMAIL_RECIPIENT=recipient@example.com
 ```
 
 `EMAIL_FROM` must be a verified sender or domain in Resend. For initial testing, Resend may only allow sending to your verified account email.
 
-Gmail checklist:
-
-1. `GMAIL_SENDER` must be the exact Gmail account that created the app password.
-2. `GMAIL_APP_PASSWORD` must be a Gmail App Password from Google Account -> Security -> 2-Step Verification -> App passwords.
-3. Do not use your normal Gmail login password.
-4. If Google displays the app password with spaces, either paste it as-is or remove spaces. The app strips spaces automatically.
-5. After editing `.env`, stop Streamlit with `Ctrl+C` and start it again.
-
-If you see `535 Username and Password not accepted`, the code reached Gmail but Gmail rejected the credentials. Generate a fresh app password and update `.env`.
-
-If the error mentions `your-email@gmail.com`, Streamlit is still reading the placeholder value. Update `.env`, then use the Streamlit sidebar **Email diagnostics -> Reload .env** button or restart Streamlit completely.
-
-You can confirm the exact `.env` file and masked Gmail account being loaded with:
+You can confirm the exact `.env` file and masked email settings being loaded with:
 
 ```bash
-python -c "from app.config import settings_debug_summary; from app.emailer import gmail_debug_summary; print(settings_debug_summary()); print(gmail_debug_summary())"
+python -c "from app.config import settings_debug_summary; from app.emailer import email_debug_summary; print(settings_debug_summary()); print(email_debug_summary())"
 ```
 
 ## 3. Run Locally
@@ -132,7 +112,7 @@ In the UI:
 
 1. Use the sidebar **Generate sales data** button to create fake ecommerce sales rows in Supabase.
 2. Ask sales questions in the chat box.
-3. Ask for reports with prompts like `Send a PDF sales report to my Gmail`.
+3. Ask for reports with prompts like `Send a PDF sales report to my email`.
 4. Optionally enter a one-off recipient email in the sidebar before asking for a report.
 5. Download the generated PDF from the chat response if you want a local copy.
 
@@ -141,7 +121,7 @@ Example chat prompts:
 ```text
 What are my top products this month?
 Summarize gross revenue and top regions.
-Send a PDF sales report to my Gmail.
+Send a PDF sales report to my email.
 Email the latest sales report to finance@example.com.
 ```
 
@@ -162,7 +142,7 @@ python cli.py ask "What are my top sales categories this month?"
 Generate and email a PDF report:
 
 ```bash
-python cli.py ask "Send a PDF sales report to my Gmail"
+python cli.py ask "Send a PDF sales report to my email"
 ```
 
 Send to a one-off recipient:
@@ -204,7 +184,7 @@ Email report:
 ```bash
 curl -X POST http://localhost:8000/agent \
   -H "Content-Type: application/json" \
-  -d '{"query":"Send my sales PDF report to Gmail"}'
+  -d '{"query":"Send my sales PDF report to my email"}'
 ```
 
 ## 7. Deploy to Railway
@@ -223,14 +203,9 @@ OPENROUTER_API_KEY
 OPENROUTER_MODEL
 OPENROUTER_SITE_URL
 OPENROUTER_APP_NAME
-EMAIL_PROVIDER
 EMAIL_FROM
+EMAIL_RECIPIENT
 RESEND_API_KEY
-GMAIL_SENDER
-GMAIL_APP_PASSWORD
-GMAIL_RECIPIENT
-GMAIL_SMTP_HOST
-GMAIL_SMTP_PORT
 REPORT_OUTPUT_DIR
 SEED_DEFAULT_ROWS
 ```
@@ -241,22 +216,20 @@ Minimum required Railway variables:
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
 OPENROUTER_API_KEY
-EMAIL_PROVIDER
 RESEND_API_KEY
 EMAIL_FROM
-GMAIL_RECIPIENT
+EMAIL_RECIPIENT
 ```
 
 Use these email values on Railway:
 
 ```text
-EMAIL_PROVIDER=resend
 RESEND_API_KEY=your-resend-api-key
 EMAIL_FROM=Your Store <reports@your-verified-domain.com>
-GMAIL_RECIPIENT=recipient@gmail.com
+EMAIL_RECIPIENT=recipient@example.com
 ```
 
-Gmail SMTP can fail on Railway with `[Errno 101] Network is unreachable` because outbound SMTP is blocked/restricted. Resend sends through HTTPS, which avoids that SMTP block.
+The app does not use Gmail SMTP. Resend sends through HTTPS, which avoids Railway's SMTP block.
 
 Deploy this repo as one Railway service.
 
@@ -291,7 +264,7 @@ The FastAPI agent endpoint is:
 ```bash
 curl -X POST https://your-railway-domain.up.railway.app/agent \
   -H "Content-Type: application/json" \
-  -d '{"query":"Send a PDF sales report to my Gmail"}'
+  -d '{"query":"Send a PDF sales report to my email"}'
 ```
 
 Use the main Railway service URL for the browser chat UI.
@@ -310,7 +283,7 @@ Which region is performing best?
 Email/report requests:
 
 ```text
-Send a PDF sales report to my Gmail.
+Send a PDF sales report to my email.
 Email me the latest sales report.
 Create and send a sales PDF.
 ```
@@ -320,4 +293,4 @@ Create and send a sales PDF.
 - The router uses OpenRouter to classify each request as either `query_sales` or `email_report`.
 - PDF reports are saved locally in `reports/` before being emailed.
 - Date filtering supports explicit dates like `2026-01-01 to 2026-03-31`.
-- Keep `.env` private. Never commit real API keys or Gmail app passwords.
+- Keep `.env` private. Never commit real API keys.
