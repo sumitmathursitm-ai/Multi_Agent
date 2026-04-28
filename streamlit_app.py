@@ -42,7 +42,7 @@ with st.sidebar:
 
     recipient = st.text_input("Optional report recipient", placeholder="someone@example.com")
 
-    with st.expander("Gmail diagnostics"):
+    with st.expander("Email diagnostics"):
         st.json(settings_debug_summary())
         if st.button("Reload .env", use_container_width=True):
             st.cache_data.clear()
@@ -52,11 +52,11 @@ with st.sidebar:
         try:
             st.json(gmail_debug_summary())
         except Exception as exc:
-            st.warning(f"Gmail settings are not fully configured yet: {exc}")
-        if st.button("Test Gmail login", use_container_width=True):
+            st.warning(f"Email settings are not fully configured yet: {exc}")
+        if st.button("Test email provider", use_container_width=True):
             try:
                 sender = test_gmail_login()
-                st.success(f"Gmail login succeeded for {sender}")
+                st.success(f"Email provider configuration looks ready for {sender}")
             except Exception as exc:
                 st.error(str(exc))
 
@@ -104,7 +104,7 @@ if prompt:
                 error = f"Request failed: {exc}"
                 st.error(error)
                 st.info(
-                    "If the PDF was created but email failed, check GMAIL_SENDER, "
-                    "GMAIL_APP_PASSWORD, and GMAIL_RECIPIENT in .env, then restart Streamlit."
+                    "If the PDF was created but email failed on Railway, use RESEND_API_KEY and EMAIL_FROM. "
+                    "Gmail SMTP is often blocked by Railway outbound networking."
                 )
                 add_message("assistant", error)

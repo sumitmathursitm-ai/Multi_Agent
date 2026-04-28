@@ -27,9 +27,13 @@ class Settings(BaseSettings):
     openrouter_site_url: str = Field(default="http://localhost:8000", alias="OPENROUTER_SITE_URL")
     openrouter_app_name: str = Field(default="Ecom Sales Agent", alias="OPENROUTER_APP_NAME")
 
-    gmail_sender: str = Field(alias="GMAIL_SENDER")
-    gmail_app_password: str = Field(alias="GMAIL_APP_PASSWORD")
-    gmail_recipient: str = Field(alias="GMAIL_RECIPIENT")
+    email_provider: str = Field(default="auto", alias="EMAIL_PROVIDER")
+    email_from: str = Field(default="", alias="EMAIL_FROM")
+    resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
+
+    gmail_sender: str = Field(default="", alias="GMAIL_SENDER")
+    gmail_app_password: str = Field(default="", alias="GMAIL_APP_PASSWORD")
+    gmail_recipient: str = Field(default="", alias="GMAIL_RECIPIENT")
     gmail_smtp_host: str = Field(default="smtp.gmail.com", alias="GMAIL_SMTP_HOST")
     gmail_smtp_port: int = Field(default=465, alias="GMAIL_SMTP_PORT")
 

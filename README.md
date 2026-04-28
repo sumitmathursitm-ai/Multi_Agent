@@ -55,6 +55,9 @@ OPENROUTER_MODEL=openai/gpt-4o-mini
 OPENROUTER_SITE_URL=http://localhost:8000
 OPENROUTER_APP_NAME=Ecom Sales Agent
 
+EMAIL_PROVIDER=auto
+EMAIL_FROM=
+RESEND_API_KEY=
 GMAIL_SENDER=your-email@gmail.com
 GMAIL_APP_PASSWORD=your-gmail-app-password
 GMAIL_RECIPIENT=recipient@gmail.com
@@ -65,7 +68,18 @@ REPORT_OUTPUT_DIR=reports
 SEED_DEFAULT_ROWS=250
 ```
 
-For Gmail, enable 2-Step Verification on the sender account and create an **App Password**. Use that app password, not your normal Gmail password.
+For local Gmail SMTP, enable 2-Step Verification on the sender account and create an **App Password**. Use that app password, not your normal Gmail password.
+
+For Railway, use Resend instead of Gmail SMTP because Railway may block outbound SMTP ports. Add:
+
+```env
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=your-resend-api-key
+EMAIL_FROM=Your Store <reports@your-verified-domain.com>
+GMAIL_RECIPIENT=recipient@gmail.com
+```
+
+`EMAIL_FROM` must be a verified sender or domain in Resend. For initial testing, Resend may only allow sending to your verified account email.
 
 Gmail checklist:
 
@@ -77,7 +91,7 @@ Gmail checklist:
 
 If you see `535 Username and Password not accepted`, the code reached Gmail but Gmail rejected the credentials. Generate a fresh app password and update `.env`.
 
-If the error mentions `your-email@gmail.com`, Streamlit is still reading the placeholder value. Update `.env`, then use the Streamlit sidebar **Gmail diagnostics -> Reload .env** button or restart Streamlit completely.
+If the error mentions `your-email@gmail.com`, Streamlit is still reading the placeholder value. Update `.env`, then use the Streamlit sidebar **Email diagnostics -> Reload .env** button or restart Streamlit completely.
 
 You can confirm the exact `.env` file and masked Gmail account being loaded with:
 
@@ -209,6 +223,9 @@ OPENROUTER_API_KEY
 OPENROUTER_MODEL
 OPENROUTER_SITE_URL
 OPENROUTER_APP_NAME
+EMAIL_PROVIDER
+EMAIL_FROM
+RESEND_API_KEY
 GMAIL_SENDER
 GMAIL_APP_PASSWORD
 GMAIL_RECIPIENT
@@ -218,11 +235,30 @@ REPORT_OUTPUT_DIR
 SEED_DEFAULT_ROWS
 ```
 
-Deploy this repo as two Railway services:
+Minimum required Railway variables:
 
-### Service 1: Streamlit UI
+```text
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+OPENROUTER_API_KEY
+EMAIL_PROVIDER
+RESEND_API_KEY
+EMAIL_FROM
+GMAIL_RECIPIENT
+```
 
-Create one Railway service for the Streamlit chat UI.
+Use these email values on Railway:
+
+```text
+EMAIL_PROVIDER=resend
+RESEND_API_KEY=your-resend-api-key
+EMAIL_FROM=Your Store <reports@your-verified-domain.com>
+GMAIL_RECIPIENT=recipient@gmail.com
+```
+
+Gmail SMTP can fail on Railway with `[Errno 101] Network is unreachable` because outbound SMTP is blocked/restricted. Resend sends through HTTPS, which avoids that SMTP block.
+
+Deploy this repo as one Railway service.
 
 Start command:
 
@@ -236,31 +272,21 @@ This runs:
 streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true
 ```
 
-### Service 2: FastAPI Backend
-
-Create a second Railway service from the same GitHub repo for the API.
-
-Start command:
+It also starts FastAPI internally with:
 
 ```bash
-./start_api.sh
+uvicorn app.main:app --host 0.0.0.0 --port $API_PORT
 ```
 
-This runs:
+The public Railway URL points to Streamlit because Streamlit uses Railway's `$PORT`. FastAPI runs internally on `API_PORT`, default `8000`.
 
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
-Railway gives each service its own `$PORT`, so do not try to run both Streamlit and FastAPI inside the same Railway service.
-
-After deployment, seed data once from your FastAPI Railway service endpoint:
+After deployment, seed data from the Streamlit sidebar. If you expose/use the internal FastAPI service separately, the seed endpoint is:
 
 ```bash
 curl -X POST "https://your-railway-domain.up.railway.app/seed?rows=500"
 ```
 
-Query the hosted FastAPI agent:
+The FastAPI agent endpoint is:
 
 ```bash
 curl -X POST https://your-railway-domain.up.railway.app/agent \
@@ -268,7 +294,7 @@ curl -X POST https://your-railway-domain.up.railway.app/agent \
   -d '{"query":"Send a PDF sales report to my Gmail"}'
 ```
 
-Use the Streamlit service URL for the browser chat UI.
+Use the main Railway service URL for the browser chat UI.
 
 ## Query Examples
 
