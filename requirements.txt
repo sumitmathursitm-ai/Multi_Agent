@@ -9,3 +9,4 @@ pydantic==2.10.4
 pydantic-settings==2.7.1
 python-dateutil==2.9.0.post0
 streamlit==1.41.1
+resend
