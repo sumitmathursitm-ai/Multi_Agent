@@ -199,6 +199,25 @@ curl -X POST http://localhost:8000/agent \
 2. Create a new Railway project from that GitHub repo.
 3. Add the same `.env` values in Railway **Variables**.
 
+Railway does not use your local `.env` file at runtime. Add these variables in the Railway service settings:
+
+```text
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+SUPABASE_SALES_TABLE
+OPENROUTER_API_KEY
+OPENROUTER_MODEL
+OPENROUTER_SITE_URL
+OPENROUTER_APP_NAME
+GMAIL_SENDER
+GMAIL_APP_PASSWORD
+GMAIL_RECIPIENT
+GMAIL_SMTP_HOST
+GMAIL_SMTP_PORT
+REPORT_OUTPUT_DIR
+SEED_DEFAULT_ROWS
+```
+
 Deploy this repo as two Railway services:
 
 ### Service 1: Streamlit UI

@@ -49,7 +49,10 @@ with st.sidebar:
             st.cache_resource.clear()
             reload_settings()
             st.success(".env reloaded.")
-        st.json(gmail_debug_summary())
+        try:
+            st.json(gmail_debug_summary())
+        except Exception as exc:
+            st.warning(f"Gmail settings are not fully configured yet: {exc}")
         if st.button("Test Gmail login", use_container_width=True):
             try:
                 sender = test_gmail_login()

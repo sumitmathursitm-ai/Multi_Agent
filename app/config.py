@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -10,28 +9,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = PROJECT_ROOT / ".env"
 ENV_EXAMPLE_PATH = PROJECT_ROOT / ".env.example"
 
-ENV_KEYS = (
-    "SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY",
-    "SUPABASE_SALES_TABLE",
-    "OPENROUTER_API_KEY",
-    "OPENROUTER_MODEL",
-    "OPENROUTER_SITE_URL",
-    "OPENROUTER_APP_NAME",
-    "GMAIL_SENDER",
-    "GMAIL_APP_PASSWORD",
-    "GMAIL_RECIPIENT",
-    "GMAIL_SMTP_HOST",
-    "GMAIL_SMTP_PORT",
-    "REPORT_OUTPUT_DIR",
-    "SEED_DEFAULT_ROWS",
-)
-
-
 def load_project_env() -> None:
-    for key in ENV_KEYS:
-        os.environ.pop(key, None)
-    load_dotenv(dotenv_path=ENV_PATH, override=True)
+    if ENV_PATH.exists():
+        load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 
 load_project_env()
@@ -61,7 +41,8 @@ class Settings(BaseSettings):
 
 def get_settings() -> Settings:
     load_project_env()
-    return Settings(_env_file=ENV_PATH)
+    env_file = ENV_PATH if ENV_PATH.exists() else None
+    return Settings(_env_file=env_file)
 
 
 def reload_settings() -> Settings:
@@ -75,4 +56,5 @@ def settings_debug_summary() -> dict[str, str | bool]:
         "env_exists": ENV_PATH.exists(),
         "env_example_path": str(ENV_EXAMPLE_PATH),
         "env_example_exists": ENV_EXAMPLE_PATH.exists(),
+        "runtime_env_source": ".env file + process environment" if ENV_PATH.exists() else "process environment",
     }
